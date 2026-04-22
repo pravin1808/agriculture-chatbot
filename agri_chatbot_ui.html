@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AgroBot – Agriculture Assistant</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.css?v=1" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --green-deep: #1a3a1f;
+      --green-mid: #2d6a35;
+      --green-light: #4caf50;
+      --gold: #d4a017;
+      --cream: #f7f2e8;
+      --earth: #8b5e3c;
+      --white: #ffffff;
+      --shadow: rgba(26, 58, 31, 0.18);
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--green-deep);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Decorative background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(76, 175, 80, 0.13) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 85% 90%, rgba(212, 160, 23, 0.10) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Leaf SVG decorations */
+    .leaf-decor {
+      position: fixed;
+      opacity: 0.07;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .leaf-decor.tl {
+      top: -60px;
+      left: -60px;
+      width: 320px;
+      transform: rotate(-20deg);
+    }
+
+    .leaf-decor.br {
+      bottom: -80px;
+      right: -60px;
+      width: 360px;
+      transform: rotate(160deg);
+    }
+
+    /* Main card */
+    .app-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 900px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      animation: fadeUp 0.8s cubic-bezier(.22, 1, .36, 1) both;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(32px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Header */
+    .header {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+      gap: 8px;
+    }
+
+    .logo-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 52px;
+      height: 52px;
+      background: linear-gradient(135deg, var(--green-light), var(--gold));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 18px rgba(76, 175, 80, 0.35);
+      animation: pulse 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 4px 18px rgba(76, 175, 80, 0.35);
+      }
+
+      50% {
+        box-shadow: 0 4px 32px rgba(76, 175, 80, 0.60);
+      }
+    }
+
+    .brand-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.6rem;
+      font-weight: 900;
+      color: var(--cream);
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+
+    .brand-name span {
+      color: var(--gold);
+    }
+
+    .tagline {
+      font-size: 0.92rem;
+      color: rgba(247, 242, 232, 0.55);
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      font-weight: 300;
+    }
+
+    /* Divider */
+    .divider {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      margin: 4px auto 0;
+    }
+
+    /* Chat container */
+    .chat-card {
+      width: 100%;
+      background: rgba(247, 242, 232, 0.04);
+      border: 1px solid rgba(212, 160, 23, 0.18);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 32px 80px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(76, 175, 80, 0.08) inset;
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(12px);
+    }
+
+    /* Chat bar above iframe */
+    .chat-topbar {
+      background: linear-gradient(135deg, var(--green-mid) 0%, var(--green-deep) 100%);
+      padding: 14px 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(212, 160, 23, 0.2);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: #4caf50;
+      border-radius: 50%;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.25);
+      animation: blink 1.8s ease-in-out infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.35;
+      }
+    }
+
+    .topbar-title {
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--cream);
+    }
+
+    .topbar-sub {
+      font-size: 0.75rem;
+      color: rgba(247, 242, 232, 0.45);
+    }
+
+    .topbar-avatar {
+      margin-left: auto;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--green-light), var(--gold));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    /* ─── Dialogflow Messenger – fully themed & contrasted ─── */
+    df-messenger {
+      /* Floating button / FAB */
+      --df-messenger-button-titlebar-color: #2d6a35;
+      --df-messenger-button-titlebar-font-color: #ffffff;
+
+      /* Chat window background */
+      --df-messenger-chat-background-color: #f7f2e8;
+
+      /* ── GENERAL FONT COLOR ── */
+      /* This controls the text in the input box, user messages, and bot messages.
+       Setting it to a dark color means we need light backgrounds everywhere. */
+      --df-messenger-font-color: #1a3a1f;
+
+      /* ── BOT messages ── */
+      --df-messenger-bot-message: #ffffff;
+      /* White bot bubble */
+      --df-messenger-bot-message-border-color: #d4a017;
+      /* Gold border for bot */
+
+      /* ── USER messages ── */
+      --df-messenger-user-message: #c8e6c9;
+      /* Light green user bubble */
+
+      /* ── Send button ── */
+      --df-messenger-send-icon: #2d6a35;
+      /* Dark green send icon */
+      --df-messenger-primary-color: #2d6a35;
+
+      z-index: 999;
+    }
+
+    /* Prompt area inside the chat card */
+    .chat-prompt-area {
+      width: 100%;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 40px 20px;
+      background: rgba(247, 242, 232, 0.03);
+    }
+
+    .prompt-icon {
+      font-size: 3rem;
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .prompt-text {
+      color: rgba(247, 242, 232, 0.7);
+      font-size: 1rem;
+      text-align: center;
+      line-height: 1.6;
+      max-width: 400px;
+    }
+
+    .open-chat-btn {
+      background: linear-gradient(135deg, var(--green-light), var(--gold));
+      color: var(--green-deep);
+      border: none;
+      border-radius: 50px;
+      padding: 12px 30px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.35);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .open-chat-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(76, 175, 80, 0.50);
+    }
+
+    /* Features row */
+    .features {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      margin-top: 22px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .feat-pill {
+      background: rgba(247, 242, 232, 0.05);
+      border: 1px solid rgba(212, 160, 23, 0.15);
+      border-radius: 40px;
+      padding: 8px 18px;
+      color: rgba(247, 242, 232, 0.65);
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      transition: background 0.2s, color 0.2s;
+      cursor: default;
+    }
+
+    .feat-pill:hover {
+      background: rgba(76, 175, 80, 0.12);
+      color: var(--cream);
+      border-color: rgba(76, 175, 80, 0.3);
+    }
+
+    .feat-pill span {
+      font-size: 1rem;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 24px;
+      font-size: 0.72rem;
+      color: rgba(247, 242, 232, 0.25);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Leaf decorations -->
+  <svg class="leaf-decor tl" viewBox="0 0 200 200" fill="white" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,190 Q50,10 190,10 Q100,100 10,190Z" />
+  </svg>
+  <svg class="leaf-decor br" viewBox="0 0 200 200" fill="white" xmlns="http://www.w3.org/2000/svg">
+    <path d="M10,190 Q50,10 190,10 Q100,100 10,190Z" />
+  </svg>
+
+  <div class="app-wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-row">
+        <div class="logo-icon">🌾</div>
+        <div class="brand-name">Agro<span>Bot</span></div>
+      </div>
+      <div class="tagline">Your Smart Agriculture Assistant</div>
+      <div class="divider"></div>
+    </div>
+
+    <!-- Chat Card -->
+    <div class="chat-card">
+
+      <!-- Top bar -->
+      <div class="chat-topbar">
+        <div class="status-dot"></div>
+        <div>
+          <div class="topbar-title">AgroBot is online</div>
+          <div class="topbar-sub">Ask about crops, soil, weather & more</div>
+        </div>
+        <div class="topbar-avatar">🤖</div>
+      </div>
+
+      <!-- Chat prompt area -->
+      <div class="chat-prompt-area">
+        <div class="prompt-icon">🌾</div>
+        <p class="prompt-text">
+          Hi there! I'm <strong>AgroBot</strong>, your smart agriculture assistant.<br />
+          Click the button below or the chat bubble in the bottom-right corner to start a conversation!
+        </p>
+        <button class="open-chat-btn" onclick="openDFMessenger()">
+          💬 &nbsp;Start Chatting
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Feature pills -->
+    <div class="features">
+      <div class="feat-pill"><span>🌱</span> Crop Advisory</div>
+      <div class="feat-pill"><span>🌦️</span> Weather Tips</div>
+      <div class="feat-pill"><span>🧪</span> Soil Analysis</div>
+      <div class="feat-pill"><span>🐛</span> Pest Control</div>
+      <div class="feat-pill"><span>💧</span> Irrigation Guide</div>
+      <div class="feat-pill"><span>📈</span> Market Prices</div>
+    </div>
+
+    <div class="footer">Powered by Google Dialogflow ES</div>
+  </div>
+
+  <!-- Dialogflow Messenger Web Component -->
+  <script src="https://www.gstatic.com/dialogflow-console/fast/messenger/bootstrap.js?v=1"></script>
+  <df-messenger intent="WELCOME" chat-title="Agriculture_chatbot_New" agent-id="d94a8db9-41f0-43bd-89c4-e355a91c41cb"
+    language-code="en"></df-messenger>
+
+  <script>
+    function openDFMessenger() {
+      // Programmatically open the df-messenger chat window
+      const messenger = document.querySelector('df-messenger');
+      if (messenger) {
+        // The web component exposes a shadowRoot; we trigger click on the fab button
+        const fab = messenger.shadowRoot &&
+          messenger.shadowRoot.querySelector('df-messenger-chat-bubble');
+        if (fab) {
+          fab.shadowRoot &&
+            fab.shadowRoot.querySelector('#widgetIcon') &&
+            fab.shadowRoot.querySelector('#widgetIcon').click();
+        } else {
+          // Fallback: dispatch a custom event the component listens for
+          messenger.dispatchEvent(new CustomEvent('df-messenger-toggle'));
+        }
+      }
+    }
+
+    // Auto-open after short delay so the widget loads first
+    window.addEventListener('df-messenger-loaded', function () {
+      // Widget is ready — user can click the bubble themselves
+      console.log('AgroBot Dialogflow Messenger loaded and ready!');
+    });
+  </script>
+
+</body>
+
+</html>
